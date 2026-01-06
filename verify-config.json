@@ -1,0 +1,20 @@
+{
+  "language": "Solidity",
+  "sources": {
+    "EnhancedToken.sol": {
+   "content": "// SPDX-License-Identifier: MIT\npragma solidity ^0.8.20;\n\n// 引入所需库\nimport \"@openzeppelin/contracts/token/ERC20/ERC20.sol\";\nimport \"@openzeppelin/contracts/access/Ownable.sol\";\n\ncontract EnhancedToken is ERC20, Ownable {\n    // 锁仓结构：数量 + 解锁时间\n    struct LockBox {\n        uint256 amount;\n        uint256 releaseTime;\n    }\n    // 映射：地址 => 锁仓信息\n    mapping(address => LockBox) public lockBoxes;\n    // 事件：记录锁定和解锁\n    event TokensLocked(address indexed user, uint256 amount, uint256 releaseTime);\n    event TokensReleased(address indexed user, uint256 amount);\n    // 将调用者自己的代币锁定一段时间\n    function lockTokens(uint256 amount, uint256 lockDurationInSeconds) public {\n        require(balanceOf(msg.sender) >= amount, \"Insufficient balance to lock\");\n        require(lockBoxes[msg.sender].amount == 0, \"Existing lock found. Release first.\"); // 简化：每人仅一个锁仓\n\n        // 转移代币到合约本身（或一个托管地址）\n        _transfer(msg.sender, address(this), amount);\n\n        uint256 releaseTime = block.timestamp + lockDurationInSeconds;\n        lockBoxes[msg.sender] = LockBox(amount, releaseTime);\n\n        emit TokensLocked(msg.sender, amount, releaseTime);\n    }\n\n    // 到期后提取锁定的代币\n    function releaseLockedTokens() public {\n        LockBox memory userLock = lockBoxes[msg.sender];\n        require(userLock.amount > 0, \"No tokens locked\");\n        require(block.timestamp >= userLock.releaseTime, \"Tokens are still locked\");\n\n        uint256 amount = userLock.amount;\n        // 先清理存储，防止重入（虽然这里风险低）\n        delete lockBoxes[msg.sender];\n\n        // 将代币从合约转回用户\n        _transfer(address(this), msg.sender, amount);\n\n        emit TokensReleased(msg.sender, amount);\n    }\n    // 步骤 2 和 3 的代码将添加在这里\n    // 仅所有者可以调用的铸造函数\n    function mint(address to, uint256 amount) public onlyOwner {\n        _mint(to, amount);\n    }\n    // 任何人都可以销毁自己持有的代币\n    function burn(uint256 amount) public {\n        _burn(msg.sender, amount);\n    }\n\n    // 允许所有者销毁任意地址的代币（谨慎使用！通常用于错误修复）\n    function burnFrom(address account, uint256 amount) public onlyOwner {\n        _spendAllowance(account, msg.sender, amount); // 检查并减少授权额度\n        _burn(account, amount);\n    }\n\n    // 构造函数：初始化代币名称、符号，并将合约部署者设为所有者\n    // 初始铸造一些代币给部署者（例如 100万枚）\n    constructor(address initialOwner)\n        ERC20(\"Enhanced Token\", \"ENG\")\n        Ownable(initialOwner)\n    {\n        _mint(initialOwner, 1000000 * 10 ** decimals());\n    }\n}"
+    }
+  },
+  "settings": {
+    "optimizer": {
+      "enabled": true,
+      "runs": 200
+    },
+    "evmVersion": "shanghai",
+    "outputSelection": {
+      "*": {
+        "*": ["evm.bytecode"]
+      }
+    }
+  }
+}

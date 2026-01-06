@@ -1,0 +1,15 @@
+{
+  "name": "My First Web3 Learner NFT #1",
+  "description": "This is the first NFT minted on my Web3 learning journey. A milestone!",
+  "image": "ipfs://bafkreifbu53t74fv7hnu7l6s6dyc6pdfdkslgk52z3tblcdfiembfj2g4m", // 重点：替换为第二步得到的图片URL
+  "attributes": [
+    {
+      "trait_type": "Achievement",
+      "value": "First Mint"
+    },
+    {
+      "trait_type": "Course Day",
+      "value": "9"
+    }
+  ]
+}
